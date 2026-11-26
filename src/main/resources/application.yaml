@@ -1,0 +1,110 @@
+spring:
+  application:
+    name: NBE13-15-2-Team07     # 앱 이름
+  config:
+    import: optional:file:.env[.properties]   # 프로젝트 루트의 .env를 설정 파일로 불러옴
+  profiles:
+    # local 프로필로 실행
+    # API A4 개발용 로그인, 더미 데이터 같은 @Profile("local") 빈이 이때만 등록됨
+    # 배포용 설정에는 넣으면 안됨
+    active: local
+
+  # DB 관련 설정 (url, username, password, DB Driver)
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/kdt_project2?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    open-in-view: false   # 요청이 끝날 때까지 DB 연결을 잡고 있지 않음, 지연 로딩은 트랜잭션 안에서만 가능
+    hibernate:
+      ddl-auto: none    # Hibernate가 테이블을 만들거나 바꾸지 않음, 테이블은 schema.sql로 관리
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul   # 날짜 시각을 DB에 저장하고 읽을 때 기준 : KST 기준
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}   # Redis 주소, Docker로 띄운 로컬 Redis
+      port: ${REDIS_PORT:6379}        # Redis 포트
+    web:
+      pageable:
+        default-page-size: 20         # Pageable 파라미터에 size가 없을 때 기본값 : 20
+        max-page-size: 50             # size를 50보다 크게 보내도 50으로 제한
+
+  cache:
+    type: redis           # @Cacheable 저장소를 Redis로 사용
+    redis:
+      time-to-live: 1h    # 캐시 유효 시간 : 1시간
+
+  jackson:
+    # JSON 직렬화 기준 시간대
+    # 받을 때 : 요청 시각을 +09:00 기준으로 맞춤 (설정 없으면 UTC로 바뀜)
+    # 내보낼 때 : OffsetDateTime·ZonedDateTime을 +09:00으로 맞춰 내보냄
+    # LocalDateTime은 시간대 정보가 없어서 영향 없음
+    time-zone: Asia/Seoul
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:    # 등록 ID. /oauth2/authorizaition/kakao 경로의 kakao
+            # 카카오 REST API 키
+            client-id: ${KAKAO_CLIENT_ID}
+            # 카카오 콘솔의 Client Secret
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            # 토큰 교환 시 id와 secret을 요청 본문(form)에 담아 보냄 (카카오 방식)
+            client-authentication-method: client_secret_post
+            # 인가 코드 방식 OAuth2
+            authorization-grant-type: authorization_code
+            # 카카오 로그인 후 돌아올 주소
+            # 실행 시 http://127.0.0.1:8080/login/oauth2/code/kakao가 됨
+            # 카카오 콘솔에 등록한 주소와 글자 하나까지 같아야함
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            # 요청할 동의 항목 : 닉네임, 프로필 사진
+            scope: profile_nickname, profile_image
+            # 표시 이름
+            client-name: Kakao
+        provider:
+          kakao:      # 카카오는 Spring 기본 제공자가 아니라 주소를 직접 지정
+            # 로그인 및 동의 화면
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            # 인가 코드를 카카오 토큰으로 교환
+            token-uri: https://kauth.kakao.com/oauth/token
+            # 사용자 정보 조회
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            # 사용자 정보를 요청할 때 카카오 토큰을 Authorization 헤더에 담음
+            user-info-authentication-method: header
+            # 응답의 id(카카오 회원번호)를 principal 이름으로 사용
+            # getName() -> 카카오 id
+            user-name-attribute: id
+
+kakao:    # 직접 정의한 설정(@ConfigurationProperties로 읽음)
+  #  카카오 admin 키, 회원 탈퇴 시 연결 끊기에 사용
+  admin-key: ${KAKAO_ADMIN_KEY}
+  # 카카오 연결 끊기 API 주소
+  unlink-uri: https://kapi.kakao.com/v1/user/unlink
+
+jwt:    # 직접 정의한 설정
+  secret: ${JWT_SECRET}         # HS256 서명 키, UTF-8 기준 32byte 이상
+  access-token-validity: 30m    # access 토큰 수명 : 30분
+  refresh-token-validity: 14d   # refresh 토큰 수명 : 14일
+
+app:      # 직접 정의한 설정
+  cookie:
+    secure: false     # refresh 쿠키 Secure 속성. 로컬(http)은 false / 배포(https)는 true
+    same-site: Lax    # 다른 사이트에서 보내는 요청에는 쿠키를 싣지 않음 (CSRF 완화)
+  cors:
+    # 우리 API를 호출할 수 있는 프론트 주소
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:3000}
+  oauth2:
+    # 카카오 로그인 성공 후 이돌할 프론트 주소
+    success-redirect-uri: ${FRONTEND_ORIGIN:http://localhost:3000}/oauth/callback
+    # 로그인 실패 시 이동할 주소
+    failure-redirect-uri: ${FRONTEND_ORIGIN:http://localhost:3000}/login?error
+
+payment:
+  # 모의 결제 서버가 API X1, X2를 호출할 때 X-API-KEY 헤더로 보내는 키
+  api-key: ${PAYMENT_API_KEY}
