@@ -14,4 +14,6 @@ public interface PaymentLinkRepository extends JpaRepository<PaymentLink, Long> 
     Optional<PaymentLink> findByUserIdAndStatus(Long userId, PaymentLinkStatus status);
 
     boolean existsByUserIdAndStatus(Long userId, PaymentLinkStatus status);
+
+    boolean existsByFintechUseNumAndUserIdNot(String fintechUseNum, Long userId);
 }

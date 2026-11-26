@@ -80,6 +80,8 @@ public enum ErrorCode {
     PAYMENT_LINK_REQUIRED(HttpStatus.CONFLICT, "결제 통장을 먼저 연결해 주세요."),
     // 이미 연결된 통장이 있는데 다시 연결
     ALREADY_LINKED(HttpStatus.CONFLICT, "이미 연결된 통장이 있습니다."),
+    //핀테크 번호 중복
+    FINTECH_NUM_ALREADY_USED(HttpStatus.CONFLICT, "다른 사용자가 이미 연결한 통장입니다."),
     // 모집이 끝난(이미 시작한) 방에 참여 및 참여 취소
     ROOM_NOT_RECRUITING(HttpStatus.CONFLICT, "모집이 끝난 방입니다."),
     // 정원이 다 찬 방에 참여
