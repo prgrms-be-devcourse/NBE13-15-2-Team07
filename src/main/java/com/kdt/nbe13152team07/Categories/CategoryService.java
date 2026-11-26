@@ -23,7 +23,7 @@ public class CategoryService {
 }
     @CacheEvict(cacheNames="categoryList",allEntries = true)
     @Transactional
-    public CategoryResponse Create(CategoryCURequest request){
+    public CategoryResponse create(CategoryCURequest request){
         Categories category=new Categories(request.code(),request.name(),request.excludable());
         categoriesRepository.save(category);
         return toResponse(category);

@@ -46,11 +46,11 @@ public class Participation {
 
     @Column(name="active_user_id",insertable = false,updatable =false)
     private Long activeUserId;
-    public Participation(User user, Room room){
+    public Participation(User user, Room room,LocalDateTime joinedAt){
         this.user=user;
         this.room=room;
         this.status=ParticipationStatus.ACTIVE;
-        this.joinedAt= LocalDateTime.now();
+        this.joinedAt= joinedAt;
         this.rankingExcluded=false;
     }
 
