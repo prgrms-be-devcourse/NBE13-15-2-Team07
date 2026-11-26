@@ -1,10 +1,10 @@
-package com.kdt.nbe13152team07.Participation;
-
+package com.kdt.nbe13152team07;
+import com.kdt.nbe13152team07.room.Room;
 import jakarta.persistence.*;
 import lombok.*;
-import com.kdt.nbe13152team07.room;
 
 import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name="participation")
