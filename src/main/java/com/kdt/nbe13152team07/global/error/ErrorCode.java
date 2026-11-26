@@ -99,6 +99,8 @@ public enum ErrorCode {
     // 인원이 모자라 자동 삭제(DELETED)된 방에 요청할 때
     ROOM_CANCELED(HttpStatus.CONFLICT, "인원이 모자라 취소된 방입니다."),
     // [제안] -> NICKNAME_DUPLICATED 추가 여부
+    //[명세 외] 카테고리를 삭제하려고 할 시에, 이미 쓰고 있는 카테고리가 있을 때
+    CategoryInUseException(HttpStatus.CONFLICT,"적용 중인 카테고리입니다."),
 
     // --------------------------------------------------------------------------------------------------------------
 
