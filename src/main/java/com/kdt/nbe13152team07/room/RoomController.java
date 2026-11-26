@@ -13,12 +13,12 @@ public class RoomController {
 
     private final RoomService roomService;
 
-    // ① 생성자
+
     public RoomController(RoomService roomService) {
         this.roomService = roomService;
     }
 
-    // ② R2 방 만들기
+    // R2 방 만들기
     @PostMapping
     public ResponseEntity<RoomCreatedResponse> create(
             @AuthenticationPrincipal LoginUser loginUser,
@@ -26,7 +26,20 @@ public class RoomController {
 
         RoomCreatedResponse response = roomService.create(loginUser.userId(), request);
 
-        // ④ 201 Created 로 응답
+        //  201 Created 로 응답
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomDetailResponse> getDetail(
+            @PathVariable("roomId") Long roomId,
+            @AuthenticationPrincipal LoginUser loginUser) {
+
+
+        Long userId = (loginUser == null) ? null : loginUser.userId();
+
+        RoomDetailResponse response = roomService.getDetail(roomId, userId);
+
+        return ResponseEntity.ok(response);
     }
 }
