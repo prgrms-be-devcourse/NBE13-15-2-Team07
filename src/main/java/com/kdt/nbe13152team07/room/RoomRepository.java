@@ -1,6 +1,8 @@
 package com.kdt.nbe13152team07.room;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Room 엔티티 저장소.
@@ -12,4 +14,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * - 스케줄러: 시작일이 된 RECRUITING 방 조회 (IN_PROGRESS 전환·인원 부족 자동 삭제)
  */
 public interface RoomRepository extends JpaRepository<Room, Long> {
+    @Query("select count(r) > 0 from Room r join r.excludedCategoryIds c where c = :categoryId")
+    boolean existsByExcludedCategoryId(@Param("categoryId") Long categoryId);
 }

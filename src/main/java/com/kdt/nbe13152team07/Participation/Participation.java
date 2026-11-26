@@ -1,9 +1,15 @@
-package com.kdt.nbe13152team07;
+package com.kdt.nbe13152team07.Participation;
+
 import com.kdt.nbe13152team07.room.Room;
+import com.kdt.nbe13152team07.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name="participation")
@@ -18,7 +24,7 @@ public class Participation {
 
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="user_id",nullable=false)
-    private Users user;
+    private User user;
 
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="room_id",nullable=false)
@@ -28,10 +34,10 @@ public class Participation {
     @Column(name= "status",nullable=false)
     private ParticipationStatus status;
 
-    //auditing 완성 되었을 때 추가 해야함.
+
     @Column(name="joined_at",nullable=false,updatable = false)
     private LocalDateTime joinedAt;
-    //auditing 완성 되었을 때 추가 해야함.
+
     @Column(name="given_up_at")
     private LocalDateTime givenUpAt;
 
@@ -40,11 +46,11 @@ public class Participation {
 
     @Column(name="active_user_id",insertable = false,updatable =false)
     private Long activeUserId;
-    public Participation(Users user,Room room){
+    public Participation(User user, Room room,LocalDateTime joinedAt){
         this.user=user;
         this.room=room;
         this.status=ParticipationStatus.ACTIVE;
-        this.joinedAt= LocalDateTime.now();
+        this.joinedAt= joinedAt;
         this.rankingExcluded=false;
     }
 

@@ -26,7 +26,7 @@ public enum ErrorCode {
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     // 모의 결제 서버가 X1, X2를 호출할 때 X-API-KEY가 틀림
     INVALID_API_KEY(HttpStatus.UNAUTHORIZED, "결제 서버 인증에 실패했습니다."),
-    // 탈퇴한 회원이 로그인하거나 토큰을 재발급할 때
+    // 탈퇴 직후 남은 access 토큰으로 API를 호출할 때
     USER_WITHDRAWN(HttpStatus.UNAUTHORIZED, "탈퇴한 회원입니다."),
 
     // --------------------------------------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ public enum ErrorCode {
 
     // [명세 외] 존재하지 않는 URL 요청
     NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
-    // 회원이 없음. 탈퇴 회원의 로그인·재발급에는 USER_WITHDRAWN을 씀
+    // 회원이 없음 (없는 userId)
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
     // 방이 없음(없는 roomId)
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
@@ -58,6 +58,8 @@ public enum ErrorCode {
     PAYMENT_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
     // 해당 초대 코드의 방이 없음
     INVALID_INVITE_CODE(HttpStatus.NOT_FOUND, "초대 코드가 올바르지 않습니다."),
+    // [명세 외] 없는 카테고리 id
+    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
 
     // --------------------------------------------------------------------------------------------------------------
 
@@ -97,6 +99,8 @@ public enum ErrorCode {
     // 인원이 모자라 자동 삭제(DELETED)된 방에 요청할 때
     ROOM_CANCELED(HttpStatus.CONFLICT, "인원이 모자라 취소된 방입니다."),
     // [제안] -> NICKNAME_DUPLICATED 추가 여부
+    //[명세 외] 카테고리를 삭제하려고 할 시에, 이미 쓰고 있는 카테고리가 있을 때
+    CategoryInUseException(HttpStatus.CONFLICT,"적용 중인 카테고리입니다."),
 
     // --------------------------------------------------------------------------------------------------------------
 
