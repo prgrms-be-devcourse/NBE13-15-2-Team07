@@ -2,6 +2,7 @@ package com.kdt.nbe13152team07.Categories;
 
 import com.kdt.nbe13152team07.global.error.BusinessException;
 import com.kdt.nbe13152team07.global.error.ErrorCode;
+import com.kdt.nbe13152team07.room.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,10 +15,11 @@ import java.util.List;
 @Service
 public class CategoryService {
     private final CategoriesRepository categoriesRepository;
-
+    private final RoomRepository roomRepository;
     @Autowired
-    public CategoryService(CategoriesRepository categoriesRepository){
+    public CategoryService(CategoriesRepository categoriesRepository, RoomRepository roomRepository){
     this.categoriesRepository=categoriesRepository;
+        this.roomRepository = roomRepository;
 }
     @CacheEvict(cacheNames="categoryList",allEntries = true)
     @Transactional
@@ -70,9 +72,9 @@ public class CategoryService {
     @Transactional
     public void delete(Long categoryId) {
        Categories category = categoriesRepository.findById(categoryId).orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
-        /*
-        room_excluded_category구현되면 구현될 예정(여기에 category가 포함되어있으면 오류 생성)
-         */
+        if (roomRepository.existsByExcludedCategoryId(categoryId)) {
+            throw new BusinessException(ErrorCode.CategoryInUseException);
+        }
         categoriesRepository.delete(category);
     }
 
