@@ -1,5 +1,7 @@
 package com.kdt.nbe13152team07.room;
 
+import org.springframework.stereotype.Component;
+
 import java.security.SecureRandom;
 
 /**
@@ -12,6 +14,7 @@ import java.security.SecureRandom;
  * 참고: 예측하기 어려운 코드여야 하므로 Random 대신 SecureRandom을 사용한다.
  *       드물게 기존 코드와 겹칠 수 있으므로, 저장 전 중복 확인(또는 DB 유니크 제약)이 필요하다.
  */
+@Component
 public class InviteCodeGenerator {
 
     // 코드에 쓸 문자 집합: A~Z, 0~9 (36개)

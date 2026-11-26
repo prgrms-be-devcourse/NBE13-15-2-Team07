@@ -1,5 +1,7 @@
 package com.kdt.nbe13152team07.room;
 
+import org.springframework.stereotype.Component;
+
 import java.time.Clock;
 import java.time.LocalDate;
 
@@ -11,6 +13,7 @@ import java.time.LocalDate;
  * - "오늘"을 Clock으로 받아 테스트에서 날짜를 고정할 수 있게 했다 (서울 시간대 Clock 주입 권장).
  *
  */
+@Component
 public class StartDatePolicy {
 
     // 기준 시각 (운영: 시스템 시계, 테스트: 고정 시계)
