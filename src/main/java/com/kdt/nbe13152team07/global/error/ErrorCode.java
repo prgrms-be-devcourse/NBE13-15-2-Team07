@@ -26,7 +26,7 @@ public enum ErrorCode {
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     // 모의 결제 서버가 X1, X2를 호출할 때 X-API-KEY가 틀림
     INVALID_API_KEY(HttpStatus.UNAUTHORIZED, "결제 서버 인증에 실패했습니다."),
-    // 탈퇴한 회원이 로그인하거나 토큰을 재발급할 때
+    // 탈퇴 직후 남은 access 토큰으로 API를 호출할 때
     USER_WITHDRAWN(HttpStatus.UNAUTHORIZED, "탈퇴한 회원입니다."),
 
     // --------------------------------------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ public enum ErrorCode {
 
     // [명세 외] 존재하지 않는 URL 요청
     NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
-    // 회원이 없음. 탈퇴 회원의 로그인·재발급에는 USER_WITHDRAWN을 씀
+    // 회원이 없음 (없는 userId)
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
     // 방이 없음(없는 roomId)
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
