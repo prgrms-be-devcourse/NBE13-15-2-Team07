@@ -5,6 +5,7 @@ import com.kdt.nbe13152team07.global.error.ErrorCode;
 import com.kdt.nbe13152team07.payment.dto.PaymentLinkRequest;
 import com.kdt.nbe13152team07.payment.dto.PaymentLinkResponse;
 import com.kdt.nbe13152team07.payment.entity.PaymentLink;
+import com.kdt.nbe13152team07.payment.entity.PaymentLinkStatus;
 import com.kdt.nbe13152team07.payment.repository.PaymentLinkRepository;
 import com.kdt.nbe13152team07.user.entity.User;
 import com.kdt.nbe13152team07.user.repository.UserRepository;
@@ -72,5 +73,11 @@ public class PaymentLinkService {
                 .filter(PaymentLink::isActive)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_LINK_NOT_FOUND));
         paymentLink.revoke();
+    }
+
+    //Linked 확인
+    @Transactional(readOnly = true)
+    public boolean isLinked(Long userId){
+        return paymentLinkRepository.existsByUserIdAndStatus(userId, PaymentLinkStatus.ACTIVE);
     }
 }
