@@ -1,12 +1,12 @@
-package com.kdt.nbe13152team07;
+package com.kdt.nbe13152team07.Participation;
 
 import com.kdt.nbe13152team07.room.Room;
+import com.kdt.nbe13152team07.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.catalina.User;
 
 import java.time.LocalDateTime;
 

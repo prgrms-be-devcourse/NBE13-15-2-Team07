@@ -12,11 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class CategoriesService {
+public class CategoryService {
     private final CategoriesRepository categoriesRepository;
 
     @Autowired
-    public CategoriesService(CategoriesRepository categoriesRepository){
+    public CategoryService(CategoriesRepository categoriesRepository){
     this.categoriesRepository=categoriesRepository;
 }
     @CacheEvict(cacheNames="categoryList",allEntries = true)
