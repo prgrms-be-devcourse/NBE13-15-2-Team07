@@ -87,7 +87,7 @@ class PaymentLinkControllerTest {
         mockMvc.perform(post("/api/payment-links").with(loginAs(userId)).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(body(NUM)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("FINTECH_NUM_ALREADY_USED"));
+                .andExpect(jsonPath("$.code").value("FINTECH_NUM_IN_USE"));
     }
 
     @Test

@@ -39,7 +39,7 @@ public class PaymentLinkService {
 
         // 2. 다른 사람이 쓰는 번호면 409
         if (paymentLinkRepository.existsByFintechUseNumAndUserIdNot(fintechUseNum, userId)) {
-            throw new BusinessException(ErrorCode.FINTECH_NUM_ALREADY_USED);
+            throw new BusinessException(ErrorCode.FINTECH_NUM_IN_USE);
         }
 
         // 3. 해제했던 기록이 있으면 재연결
