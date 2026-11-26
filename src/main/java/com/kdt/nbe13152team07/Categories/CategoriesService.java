@@ -1,5 +1,7 @@
 package com.kdt.nbe13152team07.Categories;
 
+import com.kdt.nbe13152team07.global.error.BusinessException;
+import com.kdt.nbe13152team07.global.error.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -28,7 +30,7 @@ public class CategoriesService {
     @Transactional
     @CacheEvict(cacheNames="categoryList",allEntries = true)
     public CategoryResponse  update(Long categoryId,CategoryCURequest request) {
-        Categories category = categoriesRepository.findById(categoryId).orElseThrow(() -> new CATEGORY_NOT_FOUND());
+        Categories category = categoriesRepository.findById(categoryId).orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
         category.setName(request.name());
         category.setCode(request.code());
         category.setExcludable(request.excludable());
@@ -38,7 +40,7 @@ public class CategoriesService {
 
     @Transactional(readOnly = true)
     public CategoryResponse findOne(Long Id) {
-        Categories categories = categoriesRepository.findById(Id).orElseThrow(() -> new CATEGORY_NOT_FOUND());
+        Categories categories = categoriesRepository.findById(Id).orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
         return toResponse(categories);
     }
 
@@ -67,7 +69,7 @@ public class CategoriesService {
     @CacheEvict(cacheNames="categoryList",allEntries = true)
     @Transactional
     public void delete(Long categoryId) {
-       Categories category = categoriesRepository.findById(categoryId).orElseThrow(() -> new CATEGORY_NOT_FOUND());
+       Categories category = categoriesRepository.findById(categoryId).orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
         /*
         room_excluded_category구현되면 구현될 예정(여기에 category가 포함되어있으면 오류 생성)
          */

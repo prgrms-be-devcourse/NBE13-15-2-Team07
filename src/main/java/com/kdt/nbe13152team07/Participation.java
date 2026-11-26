@@ -1,7 +1,12 @@
 package com.kdt.nbe13152team07;
+
 import com.kdt.nbe13152team07.room.Room;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.apache.catalina.User;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +24,7 @@ public class Participation {
 
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="user_id",nullable=false)
-    private Users user;
+    private User user;
 
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="room_id",nullable=false)
@@ -41,7 +46,7 @@ public class Participation {
 
     @Column(name="active_user_id",insertable = false,updatable =false)
     private Long activeUserId;
-    public Participation(Users user,Room room){
+    public Participation(User user, Room room){
         this.user=user;
         this.room=room;
         this.status=ParticipationStatus.ACTIVE;
