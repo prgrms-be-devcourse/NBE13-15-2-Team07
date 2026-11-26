@@ -1,4 +1,4 @@
-package com.kdt.nbe13152team07;
+package com.kdt.nbe13152team07.Participation;
 
 public enum ParticipationStatus {
     ACTIVE,GIVEN_UP,COMPLETED
