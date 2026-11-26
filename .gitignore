@@ -36,3 +36,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Local secrets / config ###
+.env
+src/test/resources/application.yaml

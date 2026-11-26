@@ -1,5 +1,5 @@
 package com.kdt.nbe13152team07;
-
+import com.kdt.nbe13152team07.room.Room;
 import jakarta.persistence.*;
 import lombok.*;
 
