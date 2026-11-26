@@ -1,9 +1,10 @@
 package com.kdt.nbe13152team07;
-
+import com.kdt.nbe13152team07.room.Room;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name="participation")
@@ -28,10 +29,10 @@ public class Participation {
     @Column(name= "status",nullable=false)
     private ParticipationStatus status;
 
-    //auditing 완성 되었을 때 추가 해야함.
+
     @Column(name="joined_at",nullable=false,updatable = false)
     private LocalDateTime joinedAt;
-    //auditing 완성 되었을 때 추가 해야함.
+
     @Column(name="given_up_at")
     private LocalDateTime givenUpAt;
 
