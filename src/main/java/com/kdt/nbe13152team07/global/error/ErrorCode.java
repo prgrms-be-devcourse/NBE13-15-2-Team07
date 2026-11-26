@@ -58,6 +58,8 @@ public enum ErrorCode {
     PAYMENT_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
     // 해당 초대 코드의 방이 없음
     INVALID_INVITE_CODE(HttpStatus.NOT_FOUND, "초대 코드가 올바르지 않습니다."),
+    // [명세 외] 없는 카테고리 id
+    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
 
     // --------------------------------------------------------------------------------------------------------------
 
