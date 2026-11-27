@@ -1,5 +1,6 @@
 package com.kdt.nbe13152team07.room;
 
+import com.kdt.nbe13152team07.Participation.ParticipationResponse;
 import com.kdt.nbe13152team07.global.security.LoginUser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -41,5 +42,16 @@ public class RoomController {
         RoomDetailResponse response = roomService.getDetail(roomId, userId);
 
         return ResponseEntity.ok(response);
+    }
+
+    // R6 방 참여
+    @PostMapping("/participants")
+    public ResponseEntity<ParticipationResponse> join(
+            @AuthenticationPrincipal LoginUser loginUser,
+            @Valid @RequestBody RoomJoinRequest request) {
+
+        ParticipationResponse response = roomService.join(loginUser.userId(), request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

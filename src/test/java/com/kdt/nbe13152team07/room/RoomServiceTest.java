@@ -3,6 +3,7 @@ package com.kdt.nbe13152team07.room;
 import com.kdt.nbe13152team07.Categories.Categories;
 import com.kdt.nbe13152team07.Categories.CategoriesRepository;
 import com.kdt.nbe13152team07.Participation.Participation;
+import com.kdt.nbe13152team07.Participation.ParticipationResponse;
 import com.kdt.nbe13152team07.Participation.ParticipationStatus;
 import com.kdt.nbe13152team07.global.error.BusinessException;
 import com.kdt.nbe13152team07.global.error.ErrorCode;
@@ -43,6 +44,8 @@ class RoomServiceTest {
 
     private static final Long USER_ID = 1L;
     private static final Long ROOM_ID = 7L;
+    private static final LocalDate TODAY = LocalDate.of(2026, 11, 24);
+    private static final String INVITE_CODE = "K7M2QX9A";
 
     private final Clock fixedClock = Clock.fixed(
             Instant.parse("2026-11-24T03:00:00Z"),   // UTC 03:00 = 서울 12:00
@@ -217,6 +220,21 @@ class RoomServiceTest {
         assertRoomNotSaved();
     }
 
+    @Test
+    void 포기한_다음_날_전이면_방도_만들_수_없다_409() {
+        // 방을 만들면 자동으로 참여하므로 재참여 제한이 R2에도 적용된다 (명세 v4.1)
+        User user = User.create("1001", "테스터", null, LocalDateTime.now(fixedClock));
+        user.restrictRejoin(TODAY);   // 오늘 포기 → 내일부터 참여 가능
+        given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+        given(paymentLinkService.isLinked(USER_ID)).willReturn(true);
+        given(participationRepository.existsByUserIdAndStatus(USER_ID, ParticipationStatus.ACTIVE))
+                .willReturn(false);
+
+        assertEquals(ErrorCode.REJOIN_NOT_ALLOWED_YET,
+                errorCodeOf(() -> roomService.create(USER_ID, validRequest(Visibility.PUBLIC))));
+        assertRoomNotSaved();
+    }
+
     // ===== R4 방 상세 =====
 
     private Room room(Visibility visibility, String inviteCode) {
@@ -265,5 +283,165 @@ class RoomServiceTest {
         assertNull(response.inviteCode());
         // userId가 null이면 && 단락 평가로 멤버 조회를 아예 하지 않는다
         verify(participationRepository, never()).existsByRoomIdAndUserIdAndStatus(any(), any(), any());
+    }
+
+    // ===== R6 방 참여 =====
+
+    private User joinableUser() {
+        return User.create("1002", "참여자", null, LocalDateTime.now(fixedClock));
+    }
+
+    // 404·403 검사를 통과한 뒤 409 검사가 시작되는 지점까지 준비 (방은 roomId로 찾음)
+    private void givenRoomAndUser(Room room, User user) {
+        given(roomRepository.findById(ROOM_ID)).willReturn(Optional.of(room));
+        given(userRepository.findById(USER_ID)).willReturn(Optional.of(user));
+    }
+
+    // 409 검사를 모두 통과하는 상태 (통장 연결됨, 참여 중 아님, 현재 인원 memberCount)
+    private void givenJoinAllowed(long memberCount) {
+        given(paymentLinkService.isLinked(USER_ID)).willReturn(true);
+        given(participationRepository.existsByUserIdAndStatus(USER_ID, ParticipationStatus.ACTIVE))
+                .willReturn(false);
+        given(participationRepository.countByRoomIdAndStatus(any(), any())).willReturn(memberCount);
+    }
+
+    private void assertNotJoined() {
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void 공개_방에_roomId로_참여하면_참여를_저장한다() {
+        givenRoomAndUser(room(Visibility.PUBLIC, null), joinableUser());
+        givenJoinAllowed(3L);
+
+        ParticipationResponse response = roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null));
+
+        assertEquals(ParticipationStatus.ACTIVE, response.status());
+        assertNull(response.givenUpAt(), "방금 참여했으니 포기 시각 없음");
+        assertNull(response.canRejoinFrom(), "방금 참여했으니 재참여 제한 없음");
+        assertEquals("+09:00", response.joinedAt().getOffset().getId(), "서울 시간대로 나가야 함");
+        verify(participationRepository).save(any(Participation.class));
+    }
+
+    @Test
+    void 비공개_방에_초대코드로_참여할_수_있다() {
+        given(roomRepository.findByInviteCode(INVITE_CODE)).willReturn(Optional.of(room(Visibility.PRIVATE, INVITE_CODE)));
+        given(userRepository.findById(USER_ID)).willReturn(Optional.of(joinableUser()));
+        givenJoinAllowed(3L);
+
+        roomService.join(USER_ID, new RoomJoinRequest(null, INVITE_CODE));
+
+        verify(participationRepository).save(any(Participation.class));
+    }
+
+    @Test
+    void 정원보다_한_명_적으면_참여할_수_있다() {
+        // 정원 20명 방에 19명: 경계값 바로 안쪽 (memberCount != max 같은 실수를 잡는 테스트)
+        givenRoomAndUser(room(Visibility.PUBLIC, null), joinableUser());
+        givenJoinAllowed(19L);
+
+        roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null));
+
+        verify(participationRepository).save(any(Participation.class));
+    }
+
+    @Test
+    void roomId와_초대코드를_둘_다_보내면_400() {
+        assertEquals(ErrorCode.VALIDATION_ERROR,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, INVITE_CODE))));
+        assertNotJoined();
+    }
+
+    @Test
+    void roomId와_초대코드가_둘_다_없으면_400() {
+        assertEquals(ErrorCode.VALIDATION_ERROR,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(null, null))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 없는_방이면_404() {
+        given(roomRepository.findById(ROOM_ID)).willReturn(Optional.empty());
+
+        assertEquals(ErrorCode.ROOM_NOT_FOUND,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 틀린_초대코드면_404() {
+        given(roomRepository.findByInviteCode("ZZZZZZZZ")).willReturn(Optional.empty());
+
+        assertEquals(ErrorCode.INVALID_INVITE_CODE,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(null, "ZZZZZZZZ"))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 비공개_방에_roomId로_참여하면_403() {
+        givenRoomAndUser(room(Visibility.PRIVATE, INVITE_CODE), joinableUser());
+
+        assertEquals(ErrorCode.INVITE_CODE_REQUIRED,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 참여할_때_통장이_연결되지_않았으면_409() {
+        givenRoomAndUser(room(Visibility.PUBLIC, null), joinableUser());
+        given(paymentLinkService.isLinked(USER_ID)).willReturn(false);
+
+        assertEquals(ErrorCode.PAYMENT_LINK_REQUIRED,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 시작일_당일에는_참여할_수_없다_409() {
+        // 상태는 아직 RECRUITING이지만 오늘이 시작일 (스케줄러가 늦어도 날짜로 막음)
+        Room startsToday = new Room("오늘 시작", PeriodType.WEEK1, Visibility.PUBLIC, 100000, 20,
+                TODAY, TODAY.plusDays(6), null, Set.of());
+        givenRoomAndUser(startsToday, joinableUser());
+        given(paymentLinkService.isLinked(USER_ID)).willReturn(true);
+
+        assertEquals(ErrorCode.ROOM_NOT_RECRUITING,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 이미_다른_방에_참여_중이면_409() {
+        givenRoomAndUser(room(Visibility.PUBLIC, null), joinableUser());
+        given(paymentLinkService.isLinked(USER_ID)).willReturn(true);
+        given(participationRepository.existsByUserIdAndStatus(USER_ID, ParticipationStatus.ACTIVE))
+                .willReturn(true);
+
+        assertEquals(ErrorCode.ALREADY_PARTICIPATING,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 포기한_다음_날_전이면_409() {
+        User user = joinableUser();
+        user.restrictRejoin(TODAY);   // 오늘 포기 → 내일(11/25)부터 참여 가능
+        givenRoomAndUser(room(Visibility.PUBLIC, null), user);
+        given(paymentLinkService.isLinked(USER_ID)).willReturn(true);
+        given(participationRepository.existsByUserIdAndStatus(USER_ID, ParticipationStatus.ACTIVE))
+                .willReturn(false);
+
+        assertEquals(ErrorCode.REJOIN_NOT_ALLOWED_YET,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
+        assertNotJoined();
+    }
+
+    @Test
+    void 정원이_꽉_차면_409() {
+        givenRoomAndUser(room(Visibility.PUBLIC, null), joinableUser());
+        givenJoinAllowed(20L);   // 정원 20명 방에 20명
+
+        assertEquals(ErrorCode.ROOM_FULL,
+                errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
+        assertNotJoined();
     }
 }

@@ -3,6 +3,7 @@ package com.kdt.nbe13152team07.room;
 import com.kdt.nbe13152team07.Categories.Categories;
 import com.kdt.nbe13152team07.Categories.CategoriesRepository;
 import com.kdt.nbe13152team07.Participation.Participation;
+import com.kdt.nbe13152team07.Participation.ParticipationResponse;
 import com.kdt.nbe13152team07.Participation.ParticipationStatus;
 import com.kdt.nbe13152team07.global.error.BusinessException;
 import com.kdt.nbe13152team07.global.error.ErrorCode;
@@ -104,6 +105,10 @@ public class RoomService {
         if (participationRepository.existsByUserIdAndStatus(userId, ParticipationStatus.ACTIVE)) {
             throw new BusinessException(ErrorCode.ALREADY_PARTICIPATING);
         }
+
+        if (!user.canJoin(LocalDate.now(clock))) {                       // ← 추가
+            throw new BusinessException(ErrorCode.REJOIN_NOT_ALLOWED_YET);
+        }
         // TODO (Redis 후): 사용자 락 lock:user:{userId}
 
         // ===== 저장 =====
@@ -183,6 +188,69 @@ public class RoomService {
                 isMember,
                 null,            // isCreator
                 inviteCode
+        );
+    }
+    @Transactional
+    public ParticipationResponse join(Long userId, RoomJoinRequest request) {
+
+        // ===== 400: roomId 와 inviteCode 중 정확히 하나 =====
+        boolean hasRoomId = request.roomId() != null;
+        boolean hasInviteCode = request.inviteCode() != null;
+        if (hasRoomId == hasInviteCode) {          // 둘 다 있거나, 둘 다 없으면
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        // ===== 404: 방 찾기, 회원 찾기 =====
+        Room room;
+        if (hasRoomId) {
+            room = roomRepository.findById(request.roomId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+        } else {
+            room = roomRepository.findByInviteCode(request.inviteCode())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INVITE_CODE));
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // ===== 403: 비공개 방은 초대 코드로만 =====
+        if (hasRoomId && room.getVisibility() == Visibility.PRIVATE) {
+            throw new BusinessException(ErrorCode.INVITE_CODE_REQUIRED);
+        }
+
+        // ===== 409: 상태 검사 =====
+        LocalDate today = LocalDate.now(clock);
+
+        if (!paymentLinkService.isLinked(userId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_LINK_REQUIRED);
+        }
+        if (room.getStatus() != RoomStatus.RECRUITING || !today.isBefore(room.getStartDate())) {
+            throw new BusinessException(ErrorCode.ROOM_NOT_RECRUITING);
+        }
+        if (participationRepository.existsByUserIdAndStatus(userId, ParticipationStatus.ACTIVE)) {
+            throw new BusinessException(ErrorCode.ALREADY_PARTICIPATING);
+        }
+        if (!user.canJoin(today)) {
+            throw new BusinessException(ErrorCode.REJOIN_NOT_ALLOWED_YET);
+        }
+        long memberCount = participationRepository.countByRoomIdAndStatus(room.getId(), ParticipationStatus.ACTIVE);
+        if (memberCount >= room.getMaxMembers()) {
+            throw new BusinessException(ErrorCode.ROOM_FULL);
+        }
+        // TODO (Redis 후): 방 락 lock:room:{roomId} + 사용자 락 lock:user:{userId}
+
+        // ===== 저장 =====
+        Participation participation = new Participation(user, room, LocalDateTime.now(clock));
+        participationRepository.save(participation);
+
+        // ===== 응답 =====
+        return new ParticipationResponse(
+                participation.getId(),
+                room.getId(),
+                participation.getStatus(),
+                participation.getJoinedAt().atZone(clock.getZone()).toOffsetDateTime(),
+                null,
+                null
         );
     }
 }
