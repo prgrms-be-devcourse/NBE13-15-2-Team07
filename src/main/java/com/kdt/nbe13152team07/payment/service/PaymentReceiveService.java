@@ -1,6 +1,7 @@
 package com.kdt.nbe13152team07.payment.service;
 
 import com.kdt.nbe13152team07.Categories.Categories;
+import com.kdt.nbe13152team07.Expense.ExpenseCancelResult;
 import com.kdt.nbe13152team07.Expense.ExpenseService;
 import com.kdt.nbe13152team07.Expense.RecordPaymentCommand;
 import com.kdt.nbe13152team07.Participation.Participation;
@@ -90,6 +91,36 @@ public class PaymentReceiveService {
 
         } catch (RuntimeException e) {
             receiptStore.release(Type.APPROVE, txId);   // 깃발을 지워야 mock-pay 재시도가 다시 처리됨
+            throw e;
+        }
+    }
+
+    // X2 승인 취소 수신
+    // 통장·참여·카테고리는 승인 때 이미 확인했으므로 txId만으로 지출 쪽에 취소를 맡긴다
+    @Transactional
+    public PaymentReceiptResponse cancel(String txId) {
+
+        // ① 중복 확인: 승인과 다른 키(payment:cancel:)를 써서 승인 결과에 막히지 않음
+        if (!receiptStore.tryStart(Type.CANCEL, txId)) {
+            return receiptStore.findResult(Type.CANCEL, txId)
+                    .orElseGet(() -> PaymentReceiptResponse.ignored(txId, ReceiptResult.DUPLICATE));
+        }
+
+        try {
+            // ② 지출 취소 요청 (3번 담당: canceled_at 기록)
+            ExpenseCancelResult result = expenseService.cancelByPaymentTx(txId);
+
+            // ③ 결과 → 응답 코드
+            PaymentReceiptResponse response = switch (result) {
+                // 승인 때 무시돼서 지출이 없는 결제도 mock-pay 입장에서는 취소 완료로 응답
+                case CANCELED, NOT_FOUND -> PaymentReceiptResponse.canceled(txId);
+                case ALREADY_SETTLED -> PaymentReceiptResponse.ignored(txId, ReceiptResult.IGNORED_ALREADY_SETTLED);
+            };
+            receiptStore.saveResult(Type.CANCEL, txId, response);
+            return response;
+
+        } catch (RuntimeException e) {
+            receiptStore.release(Type.CANCEL, txId);   // 깃발을 지워야 mock-pay 재시도가 다시 처리됨
             throw e;
         }
     }
