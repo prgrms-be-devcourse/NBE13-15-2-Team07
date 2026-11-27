@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name="expense")
@@ -36,18 +37,18 @@ public class Expense {
     private String merchantName;
 
     @Column(name="spent_at",nullable=false,updatable=false)
-    private LocalDateTime spentAt;
+    private OffsetDateTime spentAt;
 
     @Column(name="payment_tx_id",nullable=false)
     private String paymentTxId;
 
     @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name="canceled_at")
-    private LocalDateTime canceledAt;
+    private OffsetDateTime canceledAt;
 
-    public Expense( Participation participationId, Categories categoryId, int amount, String merchantName, LocalDateTime spentAt, String paymentTxId) {
+    public Expense( Participation participationId, Categories categoryId, int amount, String merchantName, OffsetDateTime spentAt, String paymentTxId) {
         this.participationId = participationId;
         this.categoryId = categoryId;
         this.amount = amount;
