@@ -16,4 +16,7 @@ public interface PaymentLinkRepository extends JpaRepository<PaymentLink, Long> 
     boolean existsByUserIdAndStatus(Long userId, PaymentLinkStatus status);
 
     boolean existsByFintechUseNumAndUserIdNot(String fintechUseNum, Long userId);
+
+    // X1: 결제가 들어온 통장으로 연결된 사용자 찾기 (ACTIVE만)
+    Optional<PaymentLink> findByFintechUseNumAndStatus(String fintechUseNum, PaymentLinkStatus status);
 }
