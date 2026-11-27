@@ -1,5 +1,6 @@
 package com.kdt.nbe13152team07.Categories;
 
+import com.kdt.nbe13152team07.global.config.CacheNames;
 import com.kdt.nbe13152team07.global.error.BusinessException;
 import com.kdt.nbe13152team07.global.error.ErrorCode;
 import com.kdt.nbe13152team07.room.RoomRepository;
@@ -21,7 +22,7 @@ public class CategoryService {
     this.categoriesRepository=categoriesRepository;
         this.roomRepository = roomRepository;
 }
-    @CacheEvict(cacheNames="categoryList",allEntries = true)
+    @CacheEvict(cacheNames=CacheNames.CATEGORIES,allEntries = true)
     @Transactional
     public CategoryResponse create(CategoryCURequest request){
         Categories category=new Categories(request.code(),request.name(),request.excludable());
@@ -30,7 +31,7 @@ public class CategoryService {
     }
 
     @Transactional
-    @CacheEvict(cacheNames="categoryList",allEntries = true)
+    @CacheEvict(cacheNames= CacheNames.CATEGORIES,allEntries = true)
     public CategoryResponse  update(Long categoryId,CategoryCURequest request) {
         Categories category = categoriesRepository.findById(categoryId).orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
         category.setName(request.name());
@@ -57,7 +58,7 @@ public class CategoryService {
         return list;
     }
 
-    @Cacheable(cacheNames = "categoryList")
+    @Cacheable(cacheNames = CacheNames.CATEGORIES)
     @Transactional(readOnly = true)
     public CategoryListResponse findAll() {
         List<CategoryResponse> list = new ArrayList<>();
@@ -68,7 +69,7 @@ public class CategoryService {
     }
 
 
-    @CacheEvict(cacheNames="categoryList",allEntries = true)
+    @CacheEvict(cacheNames=CacheNames.CATEGORIES,allEntries = true)
     @Transactional
     public void delete(Long categoryId) {
        Categories category = categoriesRepository.findById(categoryId).orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
