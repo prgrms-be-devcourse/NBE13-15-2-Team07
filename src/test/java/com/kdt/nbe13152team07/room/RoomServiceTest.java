@@ -5,6 +5,7 @@ import com.kdt.nbe13152team07.Categories.CategoriesRepository;
 import com.kdt.nbe13152team07.Participation.Participation;
 import com.kdt.nbe13152team07.Participation.ParticipationResponse;
 import com.kdt.nbe13152team07.Participation.ParticipationStatus;
+import com.kdt.nbe13152team07.global.common.SliceResponse;
 import com.kdt.nbe13152team07.global.error.BusinessException;
 import com.kdt.nbe13152team07.global.error.ErrorCode;
 import com.kdt.nbe13152team07.payment.service.PaymentLinkService;
@@ -16,6 +17,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.SliceImpl;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -522,5 +526,47 @@ class RoomServiceTest {
 
         assertEquals(LocalDate.of(2026, 11, 25), options.startDateRange().from());
         assertEquals(LocalDate.of(2026, 12, 8), options.startDateRange().to());
+    }
+
+    // ===== R3 모집 중인 공개 방 목록 =====
+
+    @Test
+    void 모집_중인_공개_방을_목록_한_줄_모양으로_바꾼다() {
+        Pageable pageable = PageRequest.of(0, 20);
+        Room room = new Room("12월 첫째 주 짠테크", PeriodType.WEEK1, Visibility.PUBLIC, 100000, 20,
+                LocalDate.of(2026, 11, 30), LocalDate.of(2026, 12, 6), null, Set.of(6L));
+        // 저장소에 RECRUITING·PUBLIC·오늘(11/24)·필터 값이 그대로 넘어가야 이 결과가 나온다
+        given(roomRepository.findRecruitingRooms(RoomStatus.RECRUITING, Visibility.PUBLIC, TODAY,
+                PeriodType.WEEK1, 100000, pageable))
+                .willReturn(new SliceImpl<>(List.of(room), pageable, true));
+        given(participationRepository.countByRoomIdAndStatus(any(), any())).willReturn(5L);
+        given(categoriesRepository.findAllById(Set.of(6L)))
+                .willReturn(List.of(new Categories("UTILITY", "공과금", true)));
+
+        SliceResponse<RoomSummaryResponse> result = roomService.getRecruitingRooms(PeriodType.WEEK1, 100000, pageable);
+
+        assertEquals(1, result.content().size());
+        RoomSummaryResponse summary = result.content().get(0);
+        assertEquals("12월 첫째 주 짠테크", summary.title());
+        assertEquals(5L, summary.memberCount());
+        assertEquals(List.of("공과금"), summary.excludedCategories(), "제외 카테고리는 이름 목록");
+        assertNull(summary.creatorNickname(), "만든 사람 컬럼이 생기기 전까지 null");
+        // 페이지 정보는 Slice 그대로 (명세: { content, page, size, hasNext })
+        assertTrue(result.hasNext());
+        assertEquals(0, result.page());
+        assertEquals(20, result.size());
+    }
+
+    @Test
+    void 필터를_보내지_않으면_null로_넘겨_전체를_조회한다() {
+        Pageable pageable = PageRequest.of(0, 20);
+        given(roomRepository.findRecruitingRooms(RoomStatus.RECRUITING, Visibility.PUBLIC, TODAY,
+                null, null, pageable))
+                .willReturn(new SliceImpl<>(List.of(), pageable, false));
+
+        SliceResponse<RoomSummaryResponse> result = roomService.getRecruitingRooms(null, null, pageable);
+
+        assertTrue(result.content().isEmpty(), "빈 목록도 200 + 빈 content (명세 공통 규칙)");
+        assertFalse(result.hasNext());
     }
 }

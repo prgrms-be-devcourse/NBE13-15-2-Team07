@@ -1,9 +1,12 @@
 package com.kdt.nbe13152team07.room;
 
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Pageable;
+import java.time.LocalDate;
 import java.util.Optional;
 
 /**
@@ -20,4 +23,21 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     boolean existsByExcludedCategoryId(@Param("categoryId") Long categoryId);
 
     Optional<Room> findByInviteCode(String inviteCode);
+
+    // R3: 모집 중인 공개 방 (기간·상한선은 선택 필터), 시작일 → ID 오름차순
+    @Query("""
+            select r from Room r
+            where r.status = :status
+              and r.visibility = :visibility
+              and r.startDate > :today
+              and (:periodType is null or r.periodType = :periodType)
+              and (:budgetLimit is null or r.budgetLimit = :budgetLimit)
+            order by r.startDate asc, r.id asc
+            """)
+    Slice<Room> findRecruitingRooms(@Param("status") RoomStatus status,
+                                    @Param("visibility") Visibility visibility,
+                                    @Param("today") LocalDate today,
+                                    @Param("periodType") PeriodType periodType,
+                                    @Param("budgetLimit") Integer budgetLimit,
+                                    Pageable pageable);
 }
