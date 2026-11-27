@@ -12,6 +12,7 @@ import com.kdt.nbe13152team07.payment.entity.PaymentLink;
 import com.kdt.nbe13152team07.payment.entity.PaymentLinkStatus;
 import com.kdt.nbe13152team07.payment.repository.PaymentLinkRepository;
 import com.kdt.nbe13152team07.payment.repository.PaymentReceiptStore;
+import com.kdt.nbe13152team07.payment.repository.PaymentReceiptStore.Type;
 import com.kdt.nbe13152team07.room.ParticipationRepository;
 import com.kdt.nbe13152team07.room.Room;
 import com.kdt.nbe13152team07.room.RoomStatus;
@@ -48,8 +49,8 @@ public class PaymentReceiveService {
         String txId = req.transactionId();
 
         // ② 중복 확인: 이미 들어온 결제면 저장된 결과, 아직 처리 중이면 DUPLICATE
-        if (!receiptStore.tryStart(txId)) {
-            return receiptStore.findResult(txId)
+        if (!receiptStore.tryStart(Type.APPROVE, txId)) {
+            return receiptStore.findResult(Type.APPROVE, txId)
                     .orElseGet(() -> PaymentReceiptResponse.ignored(txId, ReceiptResult.DUPLICATE));
         }
 
@@ -88,7 +89,7 @@ public class PaymentReceiveService {
             return save(txId, PaymentReceiptResponse.recorded(txId, expenseId, category.getCode(), excluded));
 
         } catch (RuntimeException e) {
-            receiptStore.release(txId);   // 깃발을 지워야 mock-pay 재시도가 다시 처리됨
+            receiptStore.release(Type.APPROVE, txId);   // 깃발을 지워야 mock-pay 재시도가 다시 처리됨
             throw e;
         }
     }
@@ -103,7 +104,7 @@ public class PaymentReceiveService {
     }
 
     private PaymentReceiptResponse save(String txId, PaymentReceiptResponse response) {
-        receiptStore.saveResult(txId, response);
+        receiptStore.saveResult(Type.APPROVE, txId, response);
         return response;
     }
 }
