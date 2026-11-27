@@ -1,0 +1,26 @@
+### ① 없는 URL → 404 NOT_FOUND
+GET http://localhost:8081/abc
+
+### ② 서비스 예외 → 404 PAYMENT_NOT_FOUND
+GET http://localhost:8081/check/business
+
+### ③ 본문 검증 → 400, fieldErrors에 두 필드
+POST http://localhost:8081/check/body
+Content-Type: application/json
+
+{"ownerName": "", "merchantCategoryCode": "58A2"}
+
+### ④ JSON 문법 오류 → 400, fieldErrors {}
+POST http://localhost:8081/check/body
+Content-Type: application/json
+
+{"ownerName":
+
+### ⑤ 파라미터 타입 오류 → 400
+GET http://localhost:8081/check/param?amount=abc
+
+### ⑥ 지원하지 않는 메서드 → 405
+POST http://localhost:8081/check/business
+
+### ⑦ 예상 못 한 예외 → 500
+GET http://localhost:8081/check/boom
