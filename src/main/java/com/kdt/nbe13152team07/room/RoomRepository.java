@@ -4,6 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 /**
  * Room 엔티티 저장소.
  * 지금은 JpaRepository 기본 기능(save, findById 등)만 사용한다.
@@ -16,4 +18,6 @@ import org.springframework.data.repository.query.Param;
 public interface RoomRepository extends JpaRepository<Room, Long> {
     @Query("select count(r) > 0 from Room r join r.excludedCategoryIds c where c = :categoryId")
     boolean existsByExcludedCategoryId(@Param("categoryId") Long categoryId);
+
+    Optional<Room> findByInviteCode(String inviteCode);
 }
