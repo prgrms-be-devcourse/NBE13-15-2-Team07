@@ -14,6 +14,13 @@ public record PaymentReceiptResponse(
         );
     }
 
+    // X2 취소 완료
+    public static PaymentReceiptResponse canceled(String transactionId) {
+        return new PaymentReceiptResponse(
+                transactionId, ReceiptResult.CANCELED, null, null, null
+        );
+    }
+
     //서비스에서 마저 작성해야 함
     public static PaymentReceiptResponse ignored(String transactionId, ReceiptResult result) {
         return new PaymentReceiptResponse(
