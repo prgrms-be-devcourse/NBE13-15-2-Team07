@@ -5,6 +5,7 @@ import com.kdt.nbe13152team07.Categories.CategoriesRepository;
 import com.kdt.nbe13152team07.Participation.Participation;
 import com.kdt.nbe13152team07.Participation.ParticipationResponse;
 import com.kdt.nbe13152team07.Participation.ParticipationStatus;
+import com.kdt.nbe13152team07.global.common.SliceResponse;
 import com.kdt.nbe13152team07.global.error.BusinessException;
 import com.kdt.nbe13152team07.global.error.ErrorCode;
 import com.kdt.nbe13152team07.payment.service.PaymentLinkService;
@@ -12,6 +13,8 @@ import com.kdt.nbe13152team07.user.entity.User;
 import com.kdt.nbe13152team07.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -304,5 +307,37 @@ public class RoomService {
                 new RoomOptionsResponse.StartDateRange(startDatePolicy.earliest(), startDatePolicy.latest());
 
         return new RoomOptionsResponse(periods, excludableCategories, startDateRange);
+    }
+
+    // R3 모집 중인 공개 방 목록 (공개)
+    @Transactional(readOnly = true)
+    public SliceResponse<RoomSummaryResponse> getRecruitingRooms(PeriodType periodType,
+                                                                 Integer budgetLimit,
+                                                                 Pageable pageable) {
+        Slice<Room> rooms = roomRepository.findRecruitingRooms(
+                RoomStatus.RECRUITING, Visibility.PUBLIC, LocalDate.now(clock),
+                periodType, budgetLimit, pageable);
+
+        // 방 하나하나를 응답 한 줄로 바꾸기
+        Slice<RoomSummaryResponse> summaries = rooms.map(room -> toSummary(room));
+
+        return SliceResponse.from(summaries);
+    }
+
+    // 방 하나 → R3 목록의 한 줄
+    private RoomSummaryResponse toSummary(Room room) {
+        long memberCount = participationRepository.countByRoomIdAndStatus(room.getId(), ParticipationStatus.ACTIVE);
+
+        List<String> excludedCategoryNames = new ArrayList<>();
+        for (Categories category : categoriesRepository.findAllById(room.getExcludedCategoryIds())) {
+            excludedCategoryNames.add(category.getName());
+        }
+
+        return new RoomSummaryResponse(
+                room.getId(), room.getTitle(), room.getPeriodType(), room.getBudgetLimit(),
+                room.getStartDate(), memberCount, room.getMaxMembers(),
+                excludedCategoryNames,
+                null
+        );
     }
 }

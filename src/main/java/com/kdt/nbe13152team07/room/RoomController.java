@@ -1,8 +1,10 @@
 package com.kdt.nbe13152team07.room;
 
 import com.kdt.nbe13152team07.Participation.ParticipationResponse;
+import com.kdt.nbe13152team07.global.common.SliceResponse;
 import com.kdt.nbe13152team07.global.security.LoginUser;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -72,5 +74,15 @@ public class RoomController {
     @GetMapping("/options")
     public ResponseEntity<RoomOptionsResponse> getOptions() {
         return ResponseEntity.ok(roomService.getOptions());
+    }
+
+    // R3 모집 중인 공개 방 목록 (공개)
+    @GetMapping
+    public ResponseEntity<SliceResponse<RoomSummaryResponse>> getRecruitingRooms(
+            @RequestParam(value = "periodType", required = false) PeriodType periodType,
+            @RequestParam(value = "budgetLimit", required = false) Integer budgetLimit,
+            Pageable pageable) {
+
+        return ResponseEntity.ok(roomService.getRecruitingRooms(periodType, budgetLimit, pageable));
     }
 }
