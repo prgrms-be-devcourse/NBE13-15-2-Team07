@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/rooms")
 public class RoomController {
@@ -53,5 +55,16 @@ public class RoomController {
         ParticipationResponse response = roomService.join(loginUser.userId(), request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // R8 참여자 목록 (멤버만)
+    @GetMapping("/{roomId}/participants")
+    public ResponseEntity<List<MemberResponse>> getMembers(
+            @PathVariable("roomId") Long roomId,
+            @AuthenticationPrincipal LoginUser loginUser) {
+
+        List<MemberResponse> response = roomService.getMembers(roomId, loginUser.userId());
+
+        return ResponseEntity.ok(response);
     }
 }

@@ -444,4 +444,46 @@ class RoomServiceTest {
                 errorCodeOf(() -> roomService.join(USER_ID, new RoomJoinRequest(ROOM_ID, null))));
         assertNotJoined();
     }
+
+    // ===== R8 참여자 목록 =====
+
+    @Test
+    void 멤버는_참여자_목록을_참여한_순서대로_본다() {
+        Room room = room(Visibility.PUBLIC, null);
+        Participation first = new Participation(
+                User.create("1001", "방만든사람", null, LocalDateTime.now(fixedClock)), room, LocalDateTime.now(fixedClock));
+        Participation second = new Participation(
+                User.create("1002", "나중참여자", null, LocalDateTime.now(fixedClock)), room, LocalDateTime.now(fixedClock));
+        given(roomRepository.existsById(ROOM_ID)).willReturn(true);
+        given(participationRepository.existsByRoomIdAndUserIdAndStatus(ROOM_ID, USER_ID, ParticipationStatus.ACTIVE))
+                .willReturn(true);
+        given(participationRepository.findAllByRoomIdAndStatusOrderByJoinedAtAsc(ROOM_ID, ParticipationStatus.ACTIVE))
+                .willReturn(List.of(first, second));
+
+        List<MemberResponse> members = roomService.getMembers(ROOM_ID, USER_ID);
+
+        assertEquals(2, members.size());
+        assertEquals("방만든사람", members.get(0).nickname(), "저장소가 준 순서(참여 순) 그대로");
+        assertEquals("나중참여자", members.get(1).nickname());
+        assertNull(members.get(0).isCreator(), "만든 사람 컬럼이 생기기 전까지 null");
+    }
+
+    @Test
+    void 없는_방의_참여자_목록은_404() {
+        given(roomRepository.existsById(ROOM_ID)).willReturn(false);
+
+        assertEquals(ErrorCode.ROOM_NOT_FOUND, errorCodeOf(() -> roomService.getMembers(ROOM_ID, USER_ID)));
+        verify(participationRepository, never()).findAllByRoomIdAndStatusOrderByJoinedAtAsc(any(), any());
+    }
+
+    @Test
+    void 멤버가_아니면_공개_방이어도_참여자_목록은_403() {
+        // R4와 달리 R8 권한은 "멤버"라서 공개·비공개를 따지지 않는다 (명세 v4.1)
+        given(roomRepository.existsById(ROOM_ID)).willReturn(true);
+        given(participationRepository.existsByRoomIdAndUserIdAndStatus(ROOM_ID, USER_ID, ParticipationStatus.ACTIVE))
+                .willReturn(false);
+
+        assertEquals(ErrorCode.NOT_ROOM_MEMBER, errorCodeOf(() -> roomService.getMembers(ROOM_ID, USER_ID)));
+        verify(participationRepository, never()).findAllByRoomIdAndStatusOrderByJoinedAtAsc(any(), any());
+    }
 }

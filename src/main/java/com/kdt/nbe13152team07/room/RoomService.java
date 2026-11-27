@@ -253,4 +253,30 @@ public class RoomService {
                 null
         );
     }
+
+    // R8 참여자 목록 (멤버만)
+    @Transactional(readOnly = true)
+    public List<MemberResponse> getMembers(Long roomId, Long userId) {
+
+        // 404: 방이 있는지
+        if (!roomRepository.existsById(roomId)) {
+            throw new BusinessException(ErrorCode.ROOM_NOT_FOUND);
+        }
+
+        // 403: 이 방 멤버인지
+        if (!participationRepository.existsByRoomIdAndUserIdAndStatus(roomId, userId, ParticipationStatus.ACTIVE)) {
+            throw new BusinessException(ErrorCode.NOT_ROOM_MEMBER);
+        }
+
+        // 참여자 목록 → 응답으로 바꾸기
+        List<Participation> participations =
+                participationRepository.findAllByRoomIdAndStatusOrderByJoinedAtAsc(roomId, ParticipationStatus.ACTIVE);
+
+        List<MemberResponse> members = new ArrayList<>();
+        for (Participation participation : participations) {
+            User user = participation.getUser();
+            members.add(new MemberResponse(user.getId(), user.getNickname(), null));   // isCreator 는 당분간 null
+        }
+        return members;
+    }
 }
