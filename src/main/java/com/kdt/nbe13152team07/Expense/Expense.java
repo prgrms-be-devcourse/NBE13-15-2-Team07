@@ -55,5 +55,6 @@ public class Expense {
         this.merchantName = merchantName;
         this.spentAt = spentAt;
         this.paymentTxId = paymentTxId;
+        this.canceledAt=null;
     }
 }

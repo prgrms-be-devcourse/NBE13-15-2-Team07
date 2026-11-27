@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface ParticipationRepository extends JpaRepository<Participation, Long> {
 
     long countByRoomIdAndStatus(Long roomId, ParticipationStatus status);
-
+    boolean existsById(Long id);
     boolean existsByRoomIdAndUserIdAndStatus(Long roomId, Long userId, ParticipationStatus status);
 
     // 이 사람이 이 상태로 참여한 게 있는가 (방 상관없이)
