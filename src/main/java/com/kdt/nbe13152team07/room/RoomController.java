@@ -67,4 +67,10 @@ public class RoomController {
 
         return ResponseEntity.ok(response);
     }
+
+    // R1 방 만들기 선택지 (공개)
+    @GetMapping("/options")
+    public ResponseEntity<RoomOptionsResponse> getOptions() {
+        return ResponseEntity.ok(roomService.getOptions());
+    }
 }

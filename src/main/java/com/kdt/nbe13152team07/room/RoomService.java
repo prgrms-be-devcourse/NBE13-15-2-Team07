@@ -106,7 +106,7 @@ public class RoomService {
             throw new BusinessException(ErrorCode.ALREADY_PARTICIPATING);
         }
 
-        if (!user.canJoin(LocalDate.now(clock))) {                       // ← 추가
+        if (!user.canJoin(LocalDate.now(clock))) {
             throw new BusinessException(ErrorCode.REJOIN_NOT_ALLOWED_YET);
         }
         // TODO (Redis 후): 사용자 락 lock:user:{userId}
@@ -278,5 +278,31 @@ public class RoomService {
             members.add(new MemberResponse(user.getId(), user.getNickname(), null));   // isCreator 는 당분간 null
         }
         return members;
+    }
+
+    // R1 방 만들기 선택지 (공개, 로그인 불필요)
+    @Transactional(readOnly = true)
+    public RoomOptionsResponse getOptions() {
+
+        // ① 기간 3개 (WEEK1, WEEK2, WEEK4)
+        List<RoomOptionsResponse.Period> periods = new ArrayList<>();
+        for (PeriodType type : PeriodType.values()) {
+            periods.add(new RoomOptionsResponse.Period(type, type.getDays(), type.getBudgetLimits()));
+        }
+
+        // ② 제외할 수 있는 카테고리만
+        List<RoomOptionsResponse.ExcludableCategory> excludableCategories = new ArrayList<>();
+        for (Categories category : categoriesRepository.findAllByOrderByIdAsc()) {
+            if (category.getExcludable()) {
+                excludableCategories.add(new RoomOptionsResponse.ExcludableCategory(
+                        category.getId(), category.getCode(), category.getName()));
+            }
+        }
+
+        // ③ 시작일 범위 (내일 ~ 14일 뒤)
+        RoomOptionsResponse.StartDateRange startDateRange =
+                new RoomOptionsResponse.StartDateRange(startDatePolicy.earliest(), startDatePolicy.latest());
+
+        return new RoomOptionsResponse(periods, excludableCategories, startDateRange);
     }
 }

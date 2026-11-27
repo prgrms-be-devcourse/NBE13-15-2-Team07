@@ -486,4 +486,41 @@ class RoomServiceTest {
         assertEquals(ErrorCode.NOT_ROOM_MEMBER, errorCodeOf(() -> roomService.getMembers(ROOM_ID, USER_ID)));
         verify(participationRepository, never()).findAllByRoomIdAndStatusOrderByJoinedAtAsc(any(), any());
     }
+
+    // ===== R1 방 만들기 선택지 =====
+
+    @Test
+    void 선택지에_기간_3개가_일수_상한선과_함께_순서대로_나온다() {
+        RoomOptionsResponse options = roomService.getOptions();
+
+        assertEquals(3, options.periods().size());
+        RoomOptionsResponse.Period week1 = options.periods().get(0);
+        assertEquals(PeriodType.WEEK1, week1.periodType());
+        assertEquals(7, week1.days());
+        assertEquals(List.of(50000, 100000, 150000, 200000), week1.budgetLimits(), "API 명세서 R1 예시");
+        assertEquals(28, options.periods().get(2).days(), "WEEK4 = 28일");
+    }
+
+    @Test
+    void 제외할_수_있는_카테고리만_나온다() {
+        given(categoriesRepository.findAllByOrderByIdAsc()).willReturn(List.of(
+                new Categories("FOOD", "식비", false),
+                new Categories("UTILITY", "공과금", true),
+                new Categories("RENT", "월세", true)));
+
+        RoomOptionsResponse options = roomService.getOptions();
+
+        assertEquals(2, options.excludableCategories().size(), "식비는 제외할 수 없어서 빠짐");
+        assertEquals("UTILITY", options.excludableCategories().get(0).code());
+        assertEquals("RENT", options.excludableCategories().get(1).code());
+    }
+
+    @Test
+    void 시작일_범위는_내일부터_14일_뒤까지다() {
+        // 오늘 2026-11-24 고정 → 11/25 ~ 12/08 (API 명세서 R1 예시와 같은 범위)
+        RoomOptionsResponse options = roomService.getOptions();
+
+        assertEquals(LocalDate.of(2026, 11, 25), options.startDateRange().from());
+        assertEquals(LocalDate.of(2026, 12, 8), options.startDateRange().to());
+    }
 }
